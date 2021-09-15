@@ -1,7 +1,6 @@
 from threading import Thread
 from itertools import cycle
 from io import BytesIO
-from random import choice
 from time import sleep
 
 import pandas as pd
@@ -23,14 +22,17 @@ formatter = logging.Formatter('%(asctime)s ~ %(name)s ~ %(levelname)s: %(message
 fileHandler.setFormatter(formatter)
 LOGGER.addHandler(fileHandler)
 
-DF = pd.read_excel('data.xlsx')
+DF = pd.read_excel('data.xlsx', dtype={'bottom_salary': str, 'top_salary': str})
 RUCAPTCHA_API = DF['rucaptcha_api'].dropna().tolist()[0]
 HEADLESS = bool(DF['headless'].dropna().tolist()[0])
+# HEADLESS = False
 THREADS = int(DF['threads'].dropna().tolist()[0])
 titles = cycle(DF['title'].dropna().tolist())
 descriptions = cycle(DF['description'].dropna().tolist())
 logins = cycle(DF['login'].dropna().tolist())
 passwords = cycle(DF['password'].dropna().tolist())
+bottom_salary = DF['bottom_salary'].dropna().tolist()[0]
+top_salary = DF['top_salary'].dropna().tolist()[0]
 
 
 class Trud:
@@ -38,7 +40,7 @@ class Trud:
         self.i = str(i) + ' поток'
         LOGGER.info(f'{self.i} started ')
         opts = FirefoxOptions()
-        opts.binary_location = r'C:\Users\KIEV-COP-4\AppData\Local\Mozilla Firefox\firefox.exe'
+        # opts.binary_location = r'C:\Users\KIEV-COP-4\AppData\Local\Mozilla Firefox\firefox.exe'
         if HEADLESS:
             opts.add_argument('--headless')
         self.driver = Firefox(options=opts)
@@ -86,11 +88,13 @@ class Trud:
         LOGGER.info(f'{self.i} {title}')
         try:
             WebDriverWait(self.driver, 30).until(
-                lambda d: self.driver.find_element_by_xpath('//*[@name="VacancyForm[title]"]')).send_keys(title)  # fixme TimeoutException#
+                lambda d: self.driver.find_element_by_xpath('//*[@name="VacancyForm[title]"]')).send_keys(title)
+            WebDriverWait(self.driver, 10).until(
+                lambda d: self.driver.find_element_by_xpath('//*/div[2]/div[1]/div[2]/div/div/div[1]/div[1]')).click()
+            WebDriverWait(self.driver, 10).until(
+                lambda d: self.driver.find_element_by_xpath('//*/div[2]/div[1]/div[2]/div/div/div[2]/ul/li[3]')).click()
             self.driver.find_element_by_xpath('//*[@name="VacancyForm[location][caption]"]').send_keys('Киев')
-            bottom_salary = f'{choice([15, 16, 17])}000'
             self.driver.find_element_by_xpath('//*[@name="VacancyForm[salary][from]"]').send_keys(bottom_salary)
-            top_salary = f'{choice([20, 21, 22, 23])}000'
             self.driver.find_element_by_xpath('//*[@name="VacancyForm[salary][to]"]').send_keys(top_salary)
             WebDriverWait(self.driver, 10).until(lambda a: self.driver.find_element_by_xpath(
                 '//*[@id="VacancyForm_experience_to-styler"]/div[1]/div[2]')).click()
@@ -127,6 +131,7 @@ def main(i):
 if __name__ == '__main__':
     try:
         LOGGER.info('start')
+        # main(1)
         procs = []
         for i in range(1, THREADS+1):
             process = Thread(target=main, args=(i, ))
