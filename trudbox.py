@@ -40,7 +40,7 @@ class Trud:
         self.i = str(i) + ' поток'
         LOGGER.info(f'{self.i} started ')
         opts = FirefoxOptions()
-        # opts.binary_location = r'C:\Users\KIEV-COP-4\AppData\Local\Mozilla Firefox\firefox.exe'
+        # opts.binary_location = r'C:\Users\KIEV-COP-4\AppData\Local\Mozilla Firefox\firefox.exe'  # fix
         if HEADLESS:
             opts.add_argument('--headless')
         self.driver = Firefox(options=opts)
@@ -63,14 +63,14 @@ class Trud:
         element = self.driver.find_element_by_xpath(captcha)
         location = element.location_once_scrolled_into_view
         size = element.size
-        png = self.driver.get_screenshot_as_png()  # saves screenshot of entire page
-        im = Image.open(BytesIO(png))  # uses PIL library to open image in memory
+        png = self.driver.get_screenshot_as_png()
+        im = Image.open(BytesIO(png))
         left = location['x']
         top = location['y']
         right = location['x'] + size['width']
         bottom = location['y'] + size['height']
-        im = im.crop((left, top, right, bottom))  # defines crop points
-        im.save(f'captcha_{self.i}.png')  # saves new cropped image
+        im = im.crop((left, top, right, bottom))
+        im.save(f'captcha_{self.i}.png')
         try:
             solver = CaptchaSolver('rucaptcha', api_key=RUCAPTCHA_API)
             raw_data = open(f'captcha_{self.i}.png', 'rb').read()
